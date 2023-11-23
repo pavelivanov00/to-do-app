@@ -45,4 +45,29 @@ app.post('/todos/save', async (req, res) => {
   }
 });
 
+app.get('/todos', async (req, res) => {
+  const { chosenDay } = req.query;
+  const parsedDate = new Date(chosenDay);
+
+  const day = parsedDate.getDate();
+  const month = parsedDate.getMonth();
+  const year = parsedDate.getFullYear();
+  
+  const startOfDay = new Date(year, month, day);
+  const endOfDay = new Date(year, month, day + 1);
+  
+  try {
+    const todos = await Todo.find({
+      day: {
+        $gte:startOfDay,
+        $lte:endOfDay
+      },
+    });
+
+    res.json(todos);
+  } catch (error) {
+    console.error('Error fetching to-do items:', error);
+    res.status(500).json({ error: 'Error fetching to-do items' });
+  }
+});
 
