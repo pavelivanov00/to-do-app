@@ -9,12 +9,12 @@ const port = process.env.PORT || 5000;
 app.use(bodyParser.json());
 app.use(cors());
 
-const todoSchema = new mongoose.Schema({
+const taskSchema = new mongoose.Schema({
   day: { type: Date },
-  todos: { type: [String] }
+  tasks: { type: [String] }
 });
 
-const Todo = mongoose.model('Todo', todoSchema);
+const Task = mongoose.model('Task', taskSchema);
 
 
 mongoose.connect('mongodb://0.0.0.0:27017/to-do-app', {
@@ -31,21 +31,42 @@ app.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
 });
 
-app.post('/todos/save', async (req, res) => {
-  const { day, todos } = req.body;
+app.post('/tasks/save', async (req, res) => {
+  const { chosenDay, taskList } = req.body;
+  const parsedDate = new Date(chosenDay);
+
+  const day = parsedDate.getDate();
+  const month = parsedDate.getMonth();
+  const year = parsedDate.getFullYear();
+  
+  const startOfDay = new Date(year, month, day);
+  const endOfDay = new Date(year, month, day + 1);
 
   try {
+    const existingTask = await Task.findOne({ 
+        day: {         
+          $gte: startOfDay,
+          $lte: endOfDay 
+        } 
+      });
 
-    const savedTodo = await Todo.create({ day: day, todos: todos });
+    if (existingTask) {
+      existingTask.tasks = taskList;
+      await existingTask.save();
 
-    res.json(savedTodo);
+      res.json(existingTask);
+    } else {
+      const newTask = await Task.create({ day: parsedDate, tasks: taskList });
+
+      res.json(newTask);
+    }
   } catch (error) {
-    console.error('Error saving to-do items:', error);
-    res.status(500).json({ error: 'Error saving to-do items' });
+    console.error('Error when saving tasks:', error);
+    res.status(500).json({ error: 'Error when saving tasks' });
   }
 });
 
-app.get('/todos', async (req, res) => {
+app.get('/tasks', async (req, res) => {
   const { chosenDay } = req.query;
   const parsedDate = new Date(chosenDay);
 
@@ -57,17 +78,17 @@ app.get('/todos', async (req, res) => {
   const endOfDay = new Date(year, month, day + 1);
   
   try {
-    const todos = await Todo.find({
+    const tasks = await Task.find({
       day: {
         $gte:startOfDay,
         $lte:endOfDay
       },
     });
 
-    res.json(todos);
+    res.json(tasks);
   } catch (error) {
-    console.error('Error fetching to-do items:', error);
-    res.status(500).json({ error: 'Error fetching to-do items' });
+    console.error('Error when fetching tasks:', error);
+    res.status(500).json({ error: 'Error when fetching tasks' });
   }
 });
 
