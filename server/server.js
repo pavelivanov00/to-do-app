@@ -10,12 +10,11 @@ app.use(bodyParser.json());
 app.use(cors());
 
 const taskSchema = new mongoose.Schema({
-  day: { type: Date },
-  tasks: { type: [String] }
+  date: { type: Date },
+  tasks: { type: Array }
 });
 
 const Task = mongoose.model('Task', taskSchema);
-
 
 mongoose.connect('mongodb://0.0.0.0:27017/to-do-app', {
   useNewUrlParser: true,
@@ -32,8 +31,8 @@ app.listen(port, () => {
 });
 
 app.post('/tasks/save', async (req, res) => {
-  const { chosenDay, taskList } = req.body;
-  const parsedDate = new Date(chosenDay);
+  const { chosenDate, taskList, completedTasks } = req.body;
+  const parsedDate = new Date(chosenDate);
 
   const day = parsedDate.getDate();
   const month = parsedDate.getMonth();
@@ -44,19 +43,31 @@ app.post('/tasks/save', async (req, res) => {
 
   try {
     const existingTask = await Task.findOne({ 
-        day: {         
+        date: {         
           $gte: startOfDay,
           $lte: endOfDay 
         } 
       });
 
     if (existingTask) {
-      existingTask.tasks = taskList;
+      const updatedTasks = taskList.map((description, index) => ({
+        description,
+        completed: completedTasks[index] || false
+      }));
+      existingTask.tasks = updatedTasks;
       await existingTask.save();
 
       res.json(existingTask);
     } else {
-      const newTask = await Task.create({ day: parsedDate, tasks: taskList });
+      const newTasks = taskList.map((description, index) => ({
+        description,
+        completed: completedTasks[index] || false
+      }));
+      
+      const newTask = await Task.create({ 
+        date: parsedDate, 
+        tasks: newTasks
+      });
 
       res.json(newTask);
     }
@@ -67,8 +78,8 @@ app.post('/tasks/save', async (req, res) => {
 });
 
 app.get('/tasks', async (req, res) => {
-  const { chosenDay } = req.query;
-  const parsedDate = new Date(chosenDay);
+  const { chosenDate } = req.query;
+  const parsedDate = new Date(chosenDate);
 
   const day = parsedDate.getDate();
   const month = parsedDate.getMonth();
@@ -79,7 +90,7 @@ app.get('/tasks', async (req, res) => {
   
   try {
     const tasks = await Task.find({
-      day: {
+      date: {
         $gte:startOfDay,
         $lte:endOfDay
       },
@@ -91,4 +102,3 @@ app.get('/tasks', async (req, res) => {
     res.status(500).json({ error: 'Error when fetching tasks' });
   }
 });
-
