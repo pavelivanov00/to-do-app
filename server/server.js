@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -16,7 +17,9 @@ const taskSchema = new mongoose.Schema({
 
 const Task = mongoose.model('Task', taskSchema);
 
-mongoose.connect('mongodb://0.0.0.0:27017/to-do-app', {
+const url = process.env.MONGO_URL_ATLAS;
+
+mongoose.connect(url, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
