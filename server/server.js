@@ -17,12 +17,12 @@ const taskSchema = new mongoose.Schema({
 
 const Task = mongoose.model('Task', taskSchema);
 
-const url = process.env.MONGO_URL_ATLAS;
 
-mongoose.connect(url, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+const atlasURL = process.env.MONGO_URL_ATLAS;  //URL за облачната услуга Atlas на MongoDB //чувствителна информация
+const localMongoDBURL = 'mongodb://0.0.0.0:27017/to-do-app'; //URL за локално инсталирана база данни MongoDB
+const dockerContainerURL = 'mongodb://local-mongo:27017/to-do-app'; //URL за MongoDB инсталиран в контейнер на Docker
+
+mongoose.connect(localMongoDBURL, {});
 
 const connection = mongoose.connection;
 connection.once('open', () => {
